@@ -112,7 +112,7 @@ function realname_username($object, $options = array()) {
 //      $output = drupal_validate_utf8($name) ? strip_tags($name, $options['allowed_tags']) : '';
     }
   }
-  elseif ($object->name) {
+  elseif (!empty($object->name)) {
     // Sometimes modules display content composed by people who are not registered
     // members of the site (e.g. mailing list or news aggregator modules).
     // This clause enables modules to display the true author of the content.

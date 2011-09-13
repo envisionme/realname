@@ -10,37 +10,6 @@ if (module_exists('token')) {
   include_once(drupal_get_path('module', 'realname') . '/token_realname.inc');
 }
 
-// This is a copy of D7's static function.
-if (!function_exists('drupal_static')) {
-  function &drupal_static($name, $default_value = NULL, $reset = FALSE) {
-    static $data = array(), $default = array();
-    if (!isset($name)) {
-      // All variables are reset. This needs to be done one at a time so that
-      // references returned by earlier invocations of drupal_static() also get reset.
-      foreach ($default as $name => $value) {
-        $data[$name] = $value;
-      }
-      // As the function returns a reference, the return should always be a variable.
-      return $data;
-    }
-    if ($reset) {
-      // The reset means the default is loaded.
-      if (array_key_exists($name, $default)) {
-        $data[$name] = $default[$name];
-      }
-      else {
-        // Reset was called before a default is set and yet a variable must be returned.
-        return $data;
-      }
-    }
-    elseif (!array_key_exists($name, $data)) {
-      // Store the default value internally and also copy it to the reference to be returned.
-      $default[$name] = $data[$name] = $default_value;
-    }
-    return $data[$name];
-  }
-}
-
 //********************************************************************
 //* Drupal Hooks
 //********************************************************************/
@@ -747,8 +716,8 @@ function realname_privatemsg_autocomplete($string) {
  *   The retreived "real name" string.
  */
 function realname_make_name(&$account) {
-  $users = &drupal_static('users',array());
-  $links = &drupal_static('links',array());
+  $users = &realname_static('users', array());
+  $links = &realname_static('links', array());
 
   // Return anonymous user right away.
   if ($account->uid == 0) {
@@ -785,9 +754,9 @@ function realname_make_name(&$account) {
  */
 function _realname_make_name(&$account) {
   static $fields, $pattern_saved, $homepage, $use_theme, $type, $module, $profile_privacy;
-  $users = &drupal_static('users',array());
-  $links = &drupal_static('links',array());
-  $edit = &drupal_static('edit',array());
+  $users = &realname_static('users', array());
+  $links = &realname_static('links', array());
+  $edit = &realname_static('edit', array());
 
   // Get our controlling variables (static makes it once per page load).
   if (!isset($fields)) {
@@ -926,6 +895,10 @@ function realname_ajax_autocomplete_user($string = '') {
   drupal_json($matches);
 }
 
+// ----------------------------------------------------------------------------
+// Drupal 7 backported functions.
+// ----------------------------------------------------------------------------
+
 /**
  * Backport of the drupal_array_set_nested_value() function from Drupal 7.
  */
@@ -940,4 +913,40 @@ function realname_array_set_nested_value(&$array, $parents, $value, $force = FAL
     $ref = &$ref[$parent];
   }
   $ref = $value;
+}
+
+/**
+ * Backport of the drupal_static() function from Drupal 7.
+ */
+function &realname_static($name, $default_value = NULL, $reset = FALSE) {
+  static $data = array(), $default = array();
+  // First check if dealing with a previously defined static variable.
+  if (isset($data[$name]) || array_key_exists($name, $data)) {
+    // Non-NULL $name and both $data[$name] and $default[$name] statics exist.
+    if ($reset) {
+      // Reset pre-existing static variable to its default value.
+      $data[$name] = $default[$name];
+    }
+    return $data[$name];
+  }
+  // Neither $data[$name] nor $default[$name] static variables exist.
+  if (isset($name)) {
+    if ($reset) {
+      // Reset was called before a default is set and yet a variable must be
+      // returned.
+      return $data;
+    }
+    // First call with new non-NULL $name. Initialize a new static variable.
+    $default[$name] = $data[$name] = $default_value;
+    return $data[$name];
+  }
+  // Reset all: ($name == NULL). This needs to be done one at a time so that
+  // references returned by earlier invocations of realname_static() also get
+  // reset.
+  foreach ($default as $name => $value) {
+    $data[$name] = $value;
+  }
+  // As the function returns a reference, the return should always be a
+  // variable.
+  return $data;
 }

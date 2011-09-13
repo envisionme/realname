@@ -559,12 +559,11 @@ function realname_form_alter(&$form, $form_state, $form_id) {
   foreach ($bypass_forms as $bypass) {
     // Is it a form the admin wants bypassed?
     if ($form_id == $bypass['name']) {
-      $field_name = '$form[\'' . implode("']['", $bypass['fields']) ."']['#default_value']";
       if (!isset($user->realname)) {
         $user->realname = realname_make_name($user);
       }
       $value = $user->uid ? $user->realname_save : variable_get('anonymous', 'Anonymous');
-      eval($field_name . ' = $value;');
+      realname_array_set_nested_value($form, array_merge($bypass['fields'], array('#default_value')), $value);
     }
   }
 
@@ -925,4 +924,20 @@ function realname_ajax_autocomplete_user($string = '') {
   }
 
   drupal_json($matches);
+}
+
+/**
+ * Backport of the drupal_array_set_nested_value() function from Drupal 7.
+ */
+function realname_array_set_nested_value(&$array, $parents, $value, $force = FALSE) {
+  $ref = &$array;
+  foreach ($parents as $parent) {
+    // PHP auto-creates container arrays and NULL entries without error if $ref
+    // is NULL, but throws an error if $ref is set, but not an array.
+    if ($force && isset($ref) && !is_array($ref)) {
+      $ref = array();
+    }
+    $ref = &$ref[$parent];
+  }
+  $ref = $value;
 }

@@ -228,7 +228,7 @@ function realname_check_breadcrumbs($account) {
 function realname_user_view($account) {
   realname_check_breadcrumbs($account);
 
-  drupal_set_title(realname_user_page_title($account));
+  drupal_set_title(check_plain(realname_user_page_title($account)));
 
   // Retrieve all profile fields and attach to $account->content.
   user_build_content($account);
@@ -245,7 +245,7 @@ function realname_user_view($account) {
 function realname_user_edit($account, $category = 'account') {
   realname_check_breadcrumbs($account);
 
-  drupal_set_title(realname_user_page_title($account));
+  drupal_set_title(check_plain(realname_user_page_title($account)));
 
   return drupal_get_form('user_profile_form', $account, $category);
 }
@@ -258,7 +258,7 @@ function realname_blog_page($account) {
     $output = blogtitle_blog_page_user($account);
   } else {
     $output = blog_page_user($account);
-    drupal_set_title($title = t("@name's blog", array('@name' => $account->realname)));
+    drupal_set_title(t("@name's blog", array('@name' => $account->realname)));
   }
 
   return $output;
@@ -302,7 +302,7 @@ function realname_statistics_user_tracker() {
  */
 function realname_content_profile_page_edit($type, $account) {
   $output = content_profile_page_edit($type, $account);
-  drupal_set_title(realname_user_page_title($account));
+  drupal_set_title(check_plain(realname_user_page_title($account)));
   return $output;
 }
 
@@ -635,7 +635,7 @@ function realname_search($op = 'search', $keys = NULL, $skip_access_check = FALS
             'user' => theme('username', $account) . '<div class="clear-block"></div>',
             'score' => $item->score,
             'snippet' => theme('user_picture', $account)
-              . (user_access('administer users') ? t('Login name: !name', array('!name' => $account->name)) : NULL),
+              . (user_access('administer users') ? t('Login name: @name', array('@name' => $account->name)) : NULL),
           );
         }
         return $results;
@@ -689,9 +689,9 @@ function realname_privatemsg_autocomplete($string) {
     $matches = array();
     while ($user = db_fetch_object($result)) {
       $account = user_load(array('uid' => $user->uid));
-      $matches[$prefix . $user->name] = $user->realname;
+      $matches[$prefix . $user->name] = check_plain($user->realname);
       if ($user->realname != $user->name) {
-        $matches[$prefix . $user->name] .= ' (' . $user->name . ')';
+        $matches[$prefix . $user->name] .= ' (' . check_plain($user->name) . ')';
       }
     }
     drupal_json($matches);

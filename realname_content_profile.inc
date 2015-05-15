@@ -8,12 +8,24 @@
  * Implementation of hook_profile_load();
  */
 function content_profile_load_profile(&$account, $type = NULL) {
-  $profile = content_profile_load($type, $account->uid);
-  if (!$profile) {
+  if (is_array($type)) {
+    $type_names = $type;
+  }
+  else {
+    $type_names = array($type);
+  }
+  foreach ($type_names as $type => $name) {
+    $loaded_profile = content_profile_load($type, $account->uid);
+    if (!empty($loaded_profile)) {
+      $profiles[$type] = $loaded_profile;
+    }
+  }
+  if (empty($profiles)) {
     return;
   }
+  foreach ($profiles as $type => $profile) {
   $fields = content_fields(NULL, $type);
-  
+
   foreach ($fields as $field_name => $field_attributes) {
     if (isset($profile->$field_name)) {
       $values = array();
@@ -40,7 +52,8 @@ function content_profile_load_profile(&$account, $type = NULL) {
       }
     }
   }
-  
+  }
+
 //  $account->title = $profile->title; // http://drupal.org/node/606364
 }
 
@@ -50,9 +63,17 @@ function realname_content_profile_get_types() {
 
 function realname_content_profile_get_fields($current, $type) {
   $fields = $links = array();
-  $all_fields = content_fields(NULL, $type);
-  if ($all_fields) {
-    foreach ($all_fields as $field_name => $field_attributes) {
+  $all_fields = array();
+  if(!is_array($type)) {
+    $type = array($type);
+  }
+  $type = array_filter($type);
+  foreach ($type as $t) {
+    $all_fields[$t] = content_fields(NULL, $t);
+  }
+  if (!empty($all_fields)) {
+    foreach ($all_fields as $type => $profile_fields) {
+      foreach ($profile_fields as $field_name => $field_attributes) {
       // If it's not they type we are looking for, then skip the field.
       if ($field_attributes['type_name'] != $type) {
         continue;
@@ -65,7 +86,7 @@ function realname_content_profile_get_fields($current, $type) {
           else {
             $selected = array_key_exists($field_name, $current);
             $fields[$field_name] = array(
-              'title' => $field_attributes['widget']['label'],
+                'title' => "$type: {$field_attributes['widget']['label']}",
               'weight' => $selected ? $current[$field_name] : 0,
               'selected' => $selected,
               );
@@ -76,6 +97,7 @@ function realname_content_profile_get_fields($current, $type) {
           $links[$field_name] = $field_attributes['widget']['label'];
       }
     }
+  }
   }
   else {
     drupal_set_message(t('The !type content type has no fields to use.', array('!type' => $type)), 'error');

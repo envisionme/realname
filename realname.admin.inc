@@ -236,7 +236,7 @@ function realname_admin_module($form_state) {
     // Now show the types, if appropriate.
     $button_text = t('Use this content type');
     $form['type'] = array(
-      '#type' => 'radios',
+      '#type' => 'checkboxes',
       '#title' => t('Content types available to @module', array('@module' => $module)),
       '#options' => $form_state['storage']['types'],
       '#default_value' => variable_get('realname_profile_type', NULL),
@@ -306,7 +306,13 @@ function realname_admin_fields() {
 
   $what = t('You are using the %module module to provide fields.', array('%module' => $module));
   if ($type) {
+    if (!is_array($type)) {
     $what .= t('The %type type is the source of data.', array('%type' => $type));
+  }
+    else {
+      $types = implode(', ', $type);
+      $what .= t('Multiple types (%types) are the source of data.', array('%types' => $types));
+    }
   }
 
   $form['heading'] = array(
